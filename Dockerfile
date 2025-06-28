@@ -1,11 +1,11 @@
 # Built following https://medium.com/@chemidy/create-the-smallest-and-secured-golang-docker-image-based-on-scratch-4752223b7324
 
 # STEP 1 build executable binary
-FROM golang:alpine as builder
+FROM golang:1.24 AS builder
 # Install SSL ca certificates
-RUN apk update && apk add git && apk add ca-certificates
+RUN apt-get update && apt-get install -y git && apt-get install -y ca-certificates
 # Create appuser
-RUN adduser -D -g '' appuser
+# RUN adduser -D -g '' appuser
 COPY . $GOPATH/src/mypackage/myapp/
 WORKDIR $GOPATH/src/mypackage/myapp/
 #get dependancies
@@ -24,5 +24,5 @@ COPY --from=builder /go/bin/alertmanager-discord /go/bin/alertmanager-discord
 
 ENV LISTEN_ADDRESS=0.0.0.0:9094
 EXPOSE 9094
-USER appuser
+# USER appuser
 ENTRYPOINT ["/go/bin/alertmanager-discord"]

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -127,6 +127,7 @@ var (
 	avatarURL                = flag.String("avatar.url", os.Getenv("DISCORD_AVATAR_URL"), "Overrides the predefined avatar of the webhook.")
 	verboseMode              = flag.String("verbose", os.Getenv("VERBOSE"), "Verbose mode")
 	additionalWebhookURLs    []string
+	myTestValue              = "init value" // This is just a placeholder for testing purposes
 )
 
 func checkWebhookURL(webhookURL string) bool {
@@ -157,7 +158,7 @@ func checkDiscordUserName(discordUserName string) {
 	}
 }
 
-func sendWebhook(alertManagerData *AlertManagerData) {
+func sendWebhook(alertManagerData *AlertManagerData, customWebhookUrl *string) {
 
 	groupedAlerts := make(map[string]AlertManagerAlerts)
 
@@ -208,40 +209,49 @@ func sendWebhook(alertManagerData *AlertManagerData) {
 			//Check if number of embeds are greater than discord limit and push to discord
 			if (indx+1)%(discordEmbedLimit-1) == 0 {
 				log.Printf("Sending chunk of data to discord")
-				postMessageToDiscord(alertManagerData, status, color, embeds)
+				postMessageToDiscord(alertManagerData, status, color, embeds, customWebhookUrl)
 				embeds = DiscordEmbeds{}
 			}
 		}
 
 		if len(embeds) > 0 {
 			log.Printf("Sending last chunk of data to discord")
-			postMessageToDiscord(alertManagerData, status, color, embeds)
+			postMessageToDiscord(alertManagerData, status, color, embeds, customWebhookUrl)
 		}
 	}
 }
 
-func postMessageToDiscord(alertManagerData *AlertManagerData, status string, color int, embeds DiscordEmbeds) {
+func postMessageToDiscord(alertManagerData *AlertManagerData, status string, color int, embeds DiscordEmbeds, customWebhookUrl *string) {
 	discordMessage := buildDiscordMessage(alertManagerData, status, len(embeds), color)
 	discordMessage.Embeds = append(discordMessage.Embeds, embeds...)
 	discordMessageBytes, _ := json.Marshal(discordMessage)
 	if *verboseMode == "ON" || *verboseMode == "true" {
 		log.Printf("Sending webhook message to Discord: %s", string(discordMessageBytes))
 	}
-	sendToWebhook(*webhookURL, discordMessageBytes)
+	if customWebhookUrl != nil && *customWebhookUrl != "" {
+		sendToWebhook(*customWebhookUrl, discordMessageBytes)
+	} else {
+		sendToWebhook(*webhookURL, discordMessageBytes)
+	}
+
 	for _, webhook := range additionalWebhookURLs {
 		sendToWebhook(webhook, discordMessageBytes)
 	}
 }
 
 func sendToWebhook(webHook string, discordMessageBytes []byte) {
+	log.Printf("Sending webhook message to Discord: %s", webHook)
+	log.Printf("Message: %s", string(discordMessageBytes))
 	response, err := http.Post(webHook, "application/json", bytes.NewReader(discordMessageBytes))
 	if err != nil {
 		log.Printf(fmt.Sprint(err))
 	}
 	// Success is indicated with 2xx status codes:
 	statusOK := response.StatusCode >= 200 && response.StatusCode < 300
+
 	if !statusOK {
-		responseData, err := ioutil.ReadAll(response.Body)
+
+		responseData, err := io.ReadAll(response.Body)
 		if err != nil {
 			log.Printf(fmt.Sprint(err))
 		}
@@ -381,8 +391,27 @@ func main() {
 
 func handleWebHook(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.RawPath)
+	query := r.URL.Query()
+	log.Printf("GET params were:", query)
 
-	body, err := ioutil.ReadAll(r.Body)
+	webhook_name := query.Get("webhook_name")
+	log.Printf("Get custom discord channel name: %s", webhook_name)
+	log.Printf("myTestValue value is: %s", myTestValue)
+
+	var webhookURLFromEnv string
+
+	// Read env from .env file with key DISCORD_WEBHOOK_${webhook_name}
+	if webhook_name != "" {
+		webhookEnv := fmt.Sprintf("DISCORD_WEBHOOK_%s", strings.ToUpper(webhook_name))
+		webhookURLFromEnv = os.Getenv(webhookEnv)
+		if webhookURLFromEnv != "" {
+			log.Printf("Using custom webhook URL from environment variable: %s with value %s", webhookEnv, webhookURLFromEnv)
+			// *webhookURL = webhookURLFromEnv
+		} else {
+			log.Printf("No custom webhook URL found for: %s", webhookEnv)
+		}
+	}
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
@@ -406,5 +435,5 @@ func handleWebHook(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sendWebhook(&alertManagerData)
+	sendWebhook(&alertManagerData, &webhookURLFromEnv)
 }
