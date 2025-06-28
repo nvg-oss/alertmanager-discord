@@ -1,3 +1,3 @@
-module github.com/rogerrum/alertmanager-discord
+module github.com/nvg-oss/alertmanager-discord
 
-go 1.21
+go 1.24

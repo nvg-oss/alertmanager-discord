@@ -1,0 +1,10 @@
+services:
+  alert-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9094:9094"
+    env_file:
+    - .env
+    
