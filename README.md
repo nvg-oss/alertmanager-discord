@@ -32,6 +32,8 @@ DISCORD_USERNAME=<override bot name at Discord>
 DISCORD_AVATAR_URL=<override avatar url at Discord (optional)>
 LISTEN_ADDRESS=<address and port to listen on (default:127.0.0.1:9094)>
 VERBOSE=ON <(Optional - logs request and response)>
+# CUSTOM_NAME is gotten from query parameter "webhook_name"
+DISCORD_WEBHOOK_CUSTOM_NAME=
 ```
 
 ## Warning
@@ -81,6 +83,8 @@ receivers:
 - name: 'discord_webhook'
   webhook_configs:
   - url: 'http://localhost:9094'
+  # custom webhook name
+  - url: 'http://localhost:9094?webhook_name=custom_name'
 ```
 
 For more details see: https://prometheus.io/docs/alerting/configuration/  
