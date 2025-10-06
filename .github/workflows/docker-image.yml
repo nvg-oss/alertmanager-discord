@@ -65,7 +65,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         id: trivy
         with:
-          image-ref: 'ghcr.io/rogerrum/alertmanager-discord:${{ steps.meta.outputs.version }}'
+          image-ref: 'ghcr.io/nvg-oss/alertmanager-discord:${{ steps.meta.outputs.version }}'
           format: 'sarif'
           exit-code: '0'
           ignore-unfixed: true
