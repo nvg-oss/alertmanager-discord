@@ -127,7 +127,6 @@ var (
 	avatarURL                = flag.String("avatar.url", os.Getenv("DISCORD_AVATAR_URL"), "Overrides the predefined avatar of the webhook.")
 	verboseMode              = flag.String("verbose", os.Getenv("VERBOSE"), "Verbose mode")
 	additionalWebhookURLs    []string
-	myTestValue              = "init value" // This is just a placeholder for testing purposes
 )
 
 func checkWebhookURL(webhookURL string) bool {
@@ -392,13 +391,10 @@ func main() {
 func handleWebHook(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s - [%s] %s", r.Host, r.Method, r.URL.RawPath)
 	query := r.URL.Query()
-	log.Printf("GET params were:", query)
 
 	webhook_name := query.Get("webhook_name")
-	log.Printf("Get custom discord channel name: %s", webhook_name)
-	log.Printf("myTestValue value is: %s", myTestValue)
 
-	var webhookURLFromEnv string
+	var webhookURLFromEnv string = ""
 
 	// Read env from .env file with key DISCORD_WEBHOOK_${webhook_name}
 	if webhook_name != "" {
