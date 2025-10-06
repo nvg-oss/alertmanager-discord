@@ -49,7 +49,6 @@ jobs:
           tags:  ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-
       # Trivy test
       - name: Run Trivy vulnerability scanner
         if: github.event_name != 'pull_request'
